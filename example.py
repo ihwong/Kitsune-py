@@ -22,13 +22,14 @@ with zipfile.ZipFile("mirai.zip","r") as zip_ref:
 
 
 # File location
-path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
+#path = "mirai.pcap" #the pcap, pcapng, or tsv file to process.
+path = "dataset.pcapng"
 packet_limit = np.Inf #the number of packets to process
 
 # KitNET params:
 maxAE = 10 #maximum size for any autoencoder in the ensemble layer
-FMgrace = 5000 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
-ADgrace = 50000 #the number of instances used to train the anomaly detector (ensemble itself)
+FMgrace = 600 #the number of instances taken to learn the feature mapping (the ensemble's architecture)
+ADgrace = 3000 #the number of instances used to train the anomaly detector (ensemble itself)
 
 # Build Kitsune
 K = Kitsune(path,packet_limit,maxAE,FMgrace,ADgrace)
@@ -48,12 +49,14 @@ while True:
         break
     RMSEs.append(rmse)
 stop = time.time()
+print("--------------------------------------------")
+print(RMSEs)
 print("Complete. Time elapsed: "+ str(stop - start))
-
+print("--------------------------------------------")
 
 # Here we demonstrate how one can fit the RMSE scores to a log-normal distribution (useful for finding/setting a cutoff threshold \phi)
 from scipy.stats import norm
-benignSample = np.log(RMSEs[FMgrace+ADgrace+1:100000])
+benignSample = np.log(RMSEs[FMgrace+ADgrace+1:7067])
 logProbs = norm.logsf(np.log(RMSEs), np.mean(benignSample), np.std(benignSample))
 
 # plot the RMSE anomaly scores
@@ -61,7 +64,7 @@ print("Plotting results")
 from matplotlib import pyplot as plt
 from matplotlib import cm
 plt.figure(figsize=(10,5))
-fig = plt.scatter(range(FMgrace+ADgrace+1,len(RMSEs)),RMSEs[FMgrace+ADgrace+1:],s=0.1,c=logProbs[FMgrace+ADgrace+1:],cmap='RdYlGn')
+fig = plt.scatter(range(FMgrace+ADgrace+1,len(RMSEs)),RMSEs[FMgrace+ADgrace+1:],s=1.0,c=logProbs[FMgrace+ADgrace+1:],cmap='RdYlGn')
 plt.yscale("log")
 plt.title("Anomaly Scores from Kitsune's Execution Phase")
 plt.ylabel("RMSE (log scaled)")
